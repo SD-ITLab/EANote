@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ─────────── HAUPTBEREICH ─────────── -->
+<div class="page-wrap">
+
+  <h2>Protokoll-Übersicht</h2>
+
+  <!-- ── Filterleiste ─────────────────────────────────────────── -->
+  <form class="flex flex-wrap items-end gap-4 mt-4 mb-6" method="get">
+    <div class="field">
+      <label>Suche&nbsp;(Kunde / Bestell-Nr.)</label>
+      <input name="q" value="{{ q or '' }}" placeholder="Suchbegriff"
+             class="border border-gray-400 rounded px-2 py-1 w-64">
+    </div>
+
+    <div class="field">
+      <label>Von&nbsp;</label>
+      <input type="date" name="from" value="{{ date_from or '' }}"
+             class="border border-gray-400 rounded px-2 py-1">
+    </div>
+
+    <div class="field">
+      <label>Bis&nbsp;</label>
+      <input type="date" name="to" value="{{ date_to or '' }}"
+             class="border border-gray-400 rounded px-2 py-1">
+    </div>
+
+    <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+      Anwenden
+    </button>
+  </form>
+
+  <!-- ── Ergebnisliste ────────────────────────────────────────── -->
+  <div class="pos-wrap">
+    <table class="positions">
+      <thead>
+        <tr>
+          <th style="width:170px">Bestell-Nr.</th>
+          <th>Kunde</th>
+          <th style="width:150px">Erstellt&nbsp;am</th>
+          <th style="width:80px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nr, order_no, cust, dt in rows %}
+          <tr>
+            <td>{{ order_no or "–" }}</td>
+            <td>{{ cust or "–" }}</td>
+            <td class="whitespace-nowrap">{{ dt.strftime("%d.%m.%Y") }}</td>
+            <td class="text-center">
+              <a href="{{ url_for('pdf_slip', number=nr) }}"
+                 class="text-indigo-600 hover:underline">PDF&nbsp;↗</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="4" class="py-6 text-center text-gray-500">
+              Keine Treffer …
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ─────────── Style (identisch zu new_slip) ─────────── -->
+<style>
+/***** Seitenbreite *****/
+.page-wrap{max-width:960px;margin:1.5rem auto;padding:0 1rem;}
+
+/* --- Mini-Layout ------------------------------------------------- */
+.field             { margin:.4rem 0; }
+.field label       { display:inline-block; width:110px; font-weight:600; }
+fieldset           { border:1px solid #ccc; padding:1rem; }
+legend             { font-size:.9rem; padding:0 .4rem; }
+input[type=text],
+input[type=date],
+textarea,
+select             { border:1px solid #bbb; padding:.25rem .4rem; }
+input[readonly]    { background:#f5f5f5; }
+
+/* --- Tabellen-Look identisch zu new_slip ------------------------- */
+.pos-wrap{margin-top:1.2rem;border:1px solid #ccc;border-radius:6px;overflow:auto;}
+.positions{width:100%;border-collapse:collapse;min-width:620px;}
+.positions th,.positions td{padding:.4rem .6rem;border:1px solid #ddd;font-size:.85rem;}
+.positions th{background:#f1f1f1;text-align:center;}
+.positions tbody tr:nth-child(odd){background:#fafafa;}
+.positions tbody tr:hover{background:#eef7ff;}
+</style>
+
+<script>
+function slipFilter () {
+  return {
+    from  : '',
+    to    : '',
+    q     : '',
+    slips : [],
+
+    load () {
+      const params = new URLSearchParams({
+        from: this.from, to: this.to, q: this.q
+      })
+      fetch('/api/slips?'+params)
+        .then(r => r.json()).then(d => this.slips = d)
+    },
+
+    /* sofort initiale Ladung */
+    init(){ this.load() }
+  }
+}
+</script>
+{% endblock %}

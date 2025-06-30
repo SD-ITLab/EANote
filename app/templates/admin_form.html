@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-wrap"
+     x-data='productEditor({{ (prod or {}) | tojson | safe }})'>
+
+  <!-- Überschrift -->
+  <h2 class="text-xl font-semibold mb-6"
+      x-text="id ? 'Produkt bearbeiten' : 'Produkt anlegen'"></h2>
+
+  <!-- Formular -->
+  <div class="grid gap-4 max-w-md">
+
+    <label class="block">
+      <span class="field label">EAN</span>
+      <input class="form-input"  x-model="ean">
+    </label>
+
+    <label class="block">
+      <span class="field label">Name</span>
+      <input class="form-input"  x-model="name">
+    </label>
+
+    <label class="block">
+      <span class="field label">Hersteller</span>
+      <input class="form-input"  x-model="brand">
+    </label>
+
+    <label class="block">
+      <span class="field label">Kategorie</span>
+      <select class="form-input" x-model.number="category_id">
+        <option value="">– bitte wählen –</option>
+        {% for c in cats %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <!-- Buttons -->
+  <div class="mt-6 flex gap-4">
+    <button class="btn-primary"  @click="save">Speichern</button>
+    <a class="btn-secondary" href="/admin">Abbrechen</a>
+  </div>
+</div>
+
+<style>
+  .page-wrap   { max-width:960px; margin:1.5rem auto; padding:0 1rem; }
+  .field.label { font-weight:600; display:block; margin-bottom:.25rem; }
+  .form-input  { width:100%; border:1px solid #bbb; padding:.3rem .45rem; }
+  .btn-primary { background:#4f46e5; color:#fff; padding:.4rem 1rem;
+                 border-radius:4px; }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-secondary { padding:.4rem 1rem; border:1px solid #bbb;
+                   border-radius:4px; }
+</style>
+
+<script>
+function productEditor(init){
+  return {
+    /* State */
+    id          : init.id          ?? null,
+    ean         : init.ean         ?? '',
+    name        : init.name        ?? '',
+    brand       : init.brand       ?? '',
+    category_id : init.category_id ?? '',
+
+    /* Aktion */
+    async save(){
+      const payload = {
+        id          : this.id,
+        ean         : this.ean.trim(),
+        name        : this.name.trim(),
+        brand       : this.brand.trim(),
+        category_id : +this.category_id || null
+      };
+
+      const res = await fetch('/api/admin/save-product',{
+                    method  : 'POST',
+                    headers : { 'Content-Type':'application/json' },
+                    body    : JSON.stringify(payload)
+                  }).then(r => r.json());
+
+      if(res.ok){
+        alert('Gespeichert');
+        window.location = '/admin';
+      }else{
+        alert('Fehler: '+res.msg);
+      }
+    }
+  }
+}
+</script>
+
+{% endblock %}

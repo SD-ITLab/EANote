@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title or "CLS SN-Protokoll Tool" }}</title>
+  <link href="{{ url_for('static', filename='css/tailwind.css') }}" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="icon" href="{{ url_for('static', filename='fav.ico') }}">
+  <style>
+    /* Navigation */
+    .topnav { background:#334155; color:#fff; }
+    .topnav .nav-inner {
+      max-width:960px; margin:0 auto; padding:.6rem 1rem;
+      display:flex; align-items:center; gap:1.6rem;
+    }
+    .topnav a {
+      color:#fff; text-decoration:none; position:relative; padding:.3rem 0;
+    }
+    .topnav a[aria-current="page"]::after {
+      content:""; position:absolute; left:0; right:0; bottom:-2px;
+      height:2px; background:#fff;
+    }
+    .page-wrap { max-width:960px; margin:1.5rem auto; padding:0 1rem; }
+    .flash { @apply px-4 py-2 rounded mb-2 text-sm; }
+    .flash-ok { @apply bg-green-100 text-green-800 border border-green-300; }
+    .flash-err { @apply bg-red-100 text-red-800 border border-red-300; }
+    .flash-warn{ @apply bg-yellow-100 text-yellow-900 border border-yellow-300; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <nav class="topnav">
+    <div class="nav-inner">
+      <a href="{{ url_for('new_slip') }}"
+         {% if request.endpoint=='new_slip' %}aria-current="page"{% endif %}>
+        Generator
+      </a>
+      <a href="{{ url_for('list_slips') }}"
+         {% if request.endpoint=='list_slips' %}aria-current="page"{% endif %}>
+        Protokolle
+      </a>
+      {% if session.get('role')=='admin' %}
+        <a href="{{ url_for('admin_home') }}"
+           {% if request.endpoint.startswith('admin') %}aria-current="page"{% endif %}>
+          Einstellungen
+        </a>
+      {% endif %}
+
+      <div class="ml-auto flex items-center gap-4">
+        {% if session.get('role')=='admin' %}
+          <span class="italic text-sm text-white/70">Admin</span>
+          <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
+        {% elif session.get('role')=='tech' %}
+          <span class="italic text-sm text-white/70">Techniker</span>
+          <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="hover:underline">Login</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{cat}}">{{ msg|safe }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+flask==3.0.3
+gunicorn==22.0.0
+sqlalchemy==2.0.30
+pymysql==1.1.0
+fpdf2==2.7.8
+requests==2.32.3
+pillow
+pylibdmtx

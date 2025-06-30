@@ -1,0 +1,76 @@
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Werte aus .env
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE:      ${MARIADB_DATABASE}
+      MARIADB_USER:          ${MARIADB_USER}
+      MARIADB_PASSWORD:      ${MARIADB_PASSWORD}
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      # passt auf, dass DB bereit ist
+      test: ["CMD-SHELL", "mariadb-admin ping -u${MARIADB_USER} -p${MARIADB_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      proxy-manager:
+        aliases:
+          - ean-db
+
+  ean-tool:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # OpenIcecat-Zugang – anpassen in .env
+      ICE_USER:     ${ICE_USER}
+      ICE_LANG:     ${ICE_LANG}
+      # Zeitzone
+      TZ:           ${TZ}
+      # Admin- und Tech-Passwörter – anpassen in .env
+      EAN_ADMIN_PW: ${EAN_ADMIN_PW}
+      TECH_PW:      ${TECH_PW}
+      # DB-Verbindungsstring wird automatisch zusammengesetzt
+      DB_DSN:       "mysql+pymysql://${MARIADB_USER}:${MARIADB_PASSWORD}@ean-db:3306/${MARIADB_DATABASE}"
+    ports:
+      - "8005:8000"
+    networks:
+      - proxy-manager
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      # Host-Alias, User und Passwort aus .env
+      PMA_HOST:      ean-db
+      PMA_USER:      ${MARIADB_USER}
+      PMA_PASSWORD:  ${MARIADB_PASSWORD}
+      PMA_AUTH_TYPE: config
+    ports:
+      - "8080:80"
+    networks:
+      - proxy-manager
+
+volumes:
+  db:
+
+networks:
+  proxy-manager:
+    name: proxy-manager_default
+    external: true

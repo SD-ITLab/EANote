@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-wrap">
+
+  <h2 class="text-xl font-semibold mb-5">Produkt­verwaltung</h2>
+
+  <!-- ── Filter ----------------------------------------------------- -->
+  <form class="flex flex-wrap gap-3 items-end mb-6" method="get">
+
+    <div class="field">
+      <label>Suche:</label>
+      <input name="q" value="{{ q }}" placeholder="EAN oder Produkt"
+             class="form-input sm:w-60">
+    </div>
+
+    <div class="field">
+      <label>Kategorie:</label>
+      <select name="cat" class="form-input">
+        <option value="">alle</option>
+        {% for c in cats %}
+          <option value="{{ c.id }}"
+                  {% if cat_id|int == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Hersteller:</label>
+      <input name="brand" value="{{ brand_q }}" placeholder="z. B. Samsung"
+             class="form-input sm:w-40">
+    </div>
+
+    <button class="btn-primary">Filtern</button>
+
+    <a href="{{ url_for('admin_product_new') }}"
+       class="btn-secondary ml-auto">Neues Produkt</a>
+  </form>
+
+  <!-- ── Ergebnis-Tabelle ------------------------------------------- -->
+  {% if rows %}
+  <div class="pos-wrap">
+    <table class="positions">
+      <thead class="bg-gray-100 text-sm">
+        <tr>
+          <th class="px-2 py-1 text-left">EAN</th>
+          <th class="px-2 py-1 text-left">Hersteller</th>
+          <th class="px-2 py-1 text-left">Produkt</th>
+          <th class="px-2 py-1 text-left">Kategorie</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in rows %}
+          <tr class="border-t hover:bg-indigo-50">
+            <td class="px-2 py-1">{{ p.ean }}</td>
+            <td class="px-2 py-1">{{ p.brand or '–' }}</td>
+            <td class="px-2 py-1">{{ p.name }}</td>
+            <td class="px-2 py-1">{{ p.cat }}</td>
+            <td class="px-2 py-1 text-right">
+              <a href="/admin/product/{{ p.id }}" class="text-indigo-600 hover:underline">✎ Edit</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-gray-500 italic">Bitte erst Filter setzen …</p>
+  {% endif %}
+
+</div>
+
+
+<style>
+/***** Seitenbreite *****/
+.page-wrap{max-width:960px;margin:1.5rem auto;padding:0 1rem;}
+
+/* --- Mini-Layout --------------------------------------------------- */
+fieldset           { border:1px solid #ccc; padding:1rem; }
+legend             { font-size:.9rem; padding:0 .4rem; }
+.field             { margin:.4rem 0; }
+.field label       { display:inline-block; width:110px; font-weight:600; }
+input[type=text],
+textarea,
+select             { border:1px solid #bbb; padding:.25rem .4rem; }
+input[readonly]    { background:#f5f5f5; }
+.table-wrapper     { overflow:auto; }
+.positions th,
+.positions td { font-size:.85rem; }
+/* Keep existing styles below */
+.hit-card{ border:1px solid #28a745;background:#f6fffa;border-radius:6px;padding:1rem;margin-top:.8rem;max-width:540px;}
+.hit-card header{font-weight:600;margin-bottom:.5rem;}
+.hit-card header .lbl{color:#28a745;margin-right:.25rem}
+.hit-card dl{display:grid;grid-template-columns:110px 1fr;gap:.25rem .75rem;font-size:.9rem;margin:0 0 .6rem;}
+.hit-card dt{font-weight:600;text-align:right;color:#333}
+.hit-card dd{margin:0}
+.hit-card textarea{width:100%;border:1px solid #bbb;padding:.35rem;margin:.2rem 0 .6rem;}
+.hit-card button{padding:.35rem .9rem;border:1px solid #28a745;background:#28a74515;cursor:pointer;}
+.hit-card button:hover{background:#28a74525}
+.pos-wrap{margin-top:1.2rem;border:1px solid #ccc;border-radius:6px;overflow:auto;}
+.positions{width:100%;border-collapse:collapse;min-width:620px;}
+.positions th,.positions td{padding:.4rem .6rem;border:1px solid #ddd;}}
+.positions th{background:#f1f1f1;font-size:.9rem;text-align:center;}
+.positions tbody tr:nth-child(odd){background:#fafafa;}
+.positions tbody tr:hover{background:#eef7ff;}
+.positions td:nth-child(1){text-align:center;width:48px;}
+.positions td:nth-child(4){white-space:nowrap;}
+.btn-del{color:#c33;border:none;background:none;cursor:pointer;font-size:1rem;line-height:1;}
+.btn-del:hover{color:#f00;}
+</style>
+
+{% endblock %}

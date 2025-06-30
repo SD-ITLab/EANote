@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* --- Mini-Layout --------------------------------------------------- */
+fieldset           { border:1px solid #ccc; padding:1rem; }
+legend             { font-size:.9rem; padding:0 .4rem; }
+.field             { margin:.4rem 0; }
+.field label       { display:inline-block; width:110px; font-weight:600; }
+input[type=text],
+input[type=number],
+textarea,
+select             { border:1px solid #bbb; padding:.25rem .4rem; }
+input[readonly]    { background:#f5f5f5; }
+
+/* Positions-Tabelle ------------------------------------------------ */
+table.positions {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:1rem;
+  table-layout: fixed;
+}
+table.positions th,
+table.positions td {
+  border:1px solid #666;
+  padding:.25rem .4rem;
+  font-size:.9rem;
+}
+table.positions th { background:#e8e8e8; }
+
+/* Spaltenbreiten und Zeilenumbruch */
+table.positions th:nth-child(1),
+table.positions td:nth-child(1) { width:40px; }
+table.positions th:nth-child(2),
+table.positions td:nth-child(2) { width:40px; }
+table.positions th:nth-child(3),
+table.positions td:nth-child(3) { width:120px; }
+table.positions th:nth-child(4),
+table.positions td:nth-child(4) { 
+  width:350px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+table.positions td:nth-child(5) { 
+  width:350px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+table.positions th:nth-child(6),
+table.positions td:nth-child(6) { width:20px; }
+
+/* --- Treffer-Card ------------------------------------------------- */
+.hit-card{
+  border:1px solid #28a745;   background:#f6fffa;
+  border-radius:6px; padding:1rem; margin-top:.8rem;
+  max-width:540px;
+}
+.hit-card header{
+  font-weight:600; margin-bottom:.5rem;
+}
+.hit-card header .lbl{color:#28a745;margin-right:.25rem}
+.hit-card dl{
+  display:grid; grid-template-columns:110px 1fr;
+  gap:.25rem .75rem; font-size:.9rem; margin:0 0 .6rem;
+}
+.hit-card dt{font-weight:600; text-align:right; color:#333}
+.hit-card dd{margin:0}
+.hit-card textarea{
+  width:100%; border:1px solid #bbb; padding:.35rem; margin:.2rem 0 .6rem;
+}
+.hit-card button{
+  padding:.35rem .9rem; border:1px solid #28a745;
+  background:#28a74515; cursor:pointer;
+}
+.hit-card button:hover{background:#28a74525}
+</style>
+
+<div x-data="slipBuilder('{{ slip_no }}')" class="page-wrap">
+
+  <h2 class="text-xl font-semibold mb-6">Neues Seriennummern‑Protokoll</h2>
+
+  <!-- Kopf -------------------------------------------------------------->
+  <div class="field">
+    <label for="lsno">Protokoll-Nr.:</label>
+    <input id="lsno" type="text" x-model="slipNo" readonly>
+  </div>
+
+  <div class="field">
+    <label>Bestell-Nr.:</label>
+    <input type="text" x-model="orderNo">
+  </div>
+
+  <div class="field">
+    <label>Kunde:</label>
+    <input type="text" x-model="customer">
+  </div>
+
+  <!-- Position erfassen ------------------------------------------------->
+  <fieldset class="mt-3">
+    <legend>Position erfassen</legend>
+
+    <div class="field">
+      <label>EAN / UPN:</label>
+      <input type="text" x-model="ean" @blur="eanLookup()" style="width:220px">
+    </div>
+
+    <!-- Treffer aus DB / Icecat ----------------------------------------->
+    <template x-if="productName">
+      <section class="hit-card">
+        <header>
+          <span class="lbl">EAN:</span>
+          <span x-text="ean"></span>
+        </header>
+
+        <dl>
+          <dt>Kategorie</dt><dd x-text="productCat || '-' "></dd>
+          <dt>Hersteller</dt><dd x-text="productBrand || '-' "></dd>
+          <dt>Produkt</dt><dd x-text="productName"></dd>
+        </dl>
+
+        <div class="field">
+          <label>Anzahl:</label>
+          <input type="number" x-model.number="quantity" min="1" style="width:80px">
+        </div>
+
+        <label class="field label">Seriennummer(n) (komma-getrennt)</label>
+        <textarea x-model="snsInput" rows="2" class="form-input w-full mb-2"></textarea>
+
+        <button @click="addItem()"
+                class="btn-primary"
+                :disabled="quantity < 1">Position übernehmen</button>
+      </section>
+    </template>
+
+    <!-- Nicht gefunden -->
+    <template x-if="ean && notFound">
+      <div class="mt-3" style="border:1px dashed #c33;padding:.6rem">
+        <p style="color:#c33;margin:0 0 .3rem">
+          EAN nicht gefunden – Produkt manuell anlegen:
+        </p>
+        <!-- Manuelle Eingabefelder analog -->
+      </div>
+    </template>
+  </fieldset>
+
+  <!-- Positionsliste -------------------------------------------------->
+  <div class="pos-wrap mt-6">
+    <table class="positions">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Menge</th>
+          <th>Kategorie</th>
+          <th>Produkt</th>
+          <th>Seriennummern</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="(it, idx) in items" :key="idx">
+          <tr>
+            <td class="text-center" x-text="idx + 1"></td>
+            <td class="text-center" x-text="it.quantity"></td>
+            <td x-text="it.cat"></td>
+            <td x-text="it.name"></td>
+            <td x-text="it.sns.join(', ') || '-' "></td>
+            <td class="text-center">
+              <button class="btn-del" @click="remove(idx)">✖</button>
+            </td>
+          </tr>
+        </template>
+        <tr x-show="!items.length">
+          <td colspan="6" class="py-4 text-center text-gray-500">Noch keine Positionen</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PDF-Button ------------------------------------------------------->
+  <div class="text-right mt-4">
+    <button @click="saveSlip()"
+            class="btn-primary"
+            :disabled="!formReady">PDF erstellen</button>
+  </div>
+
+</div>
+
+<script>
+function slipBuilder(initNo) {
+  return {
+    slipNo: initNo,
+    orderNo: '',
+    customer: '',
+    ean: '',
+    productId: null,
+    quantity: 1,
+    snsInput: '',
+    items: [],
+    productName: '',
+    productCat: '',
+    productBrand: '',
+    notFound: false,
+
+    get formReady() {
+      return this.orderNo.trim() && this.customer.trim() && this.items.length;
+    },
+
+    eanLookup() {
+      if (!this.ean) return;
+      fetch('/lookup/' + this.ean)
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            this.productName = d.name;
+            this.productCat = d.cat;
+            this.productBrand = d.brand;
+            this.productId = d.pid;
+            this.notFound = false;
+          } else {
+            this.productName = this.productCat = this.productBrand = '';
+            this.productId = null;
+            this.notFound = true;
+          }
+        });
+    },
+
+    addItem() {
+      this.items.push({
+        product_id: this.productId,
+        name: this.productName,
+        cat: this.productCat,
+        sns: this.snsInput.split(',').map(s=>s.trim()).filter(Boolean),
+        quantity: this.quantity
+      });
+      this.ean = this.snsInput = '';
+      this.quantity = 1;
+      this.productName = this.productCat = this.productBrand = '';
+      this.productId = null;
+      this.notFound = false;
+    },
+
+    remove(idx) { this.items.splice(idx, 1) },
+
+    saveSlip() {
+      fetch('/api/save-slip', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          number: this.slipNo,
+          order_no: this.orderNo,
+          customer: this.customer,
+          items: this.items
+        })
+      })
+      .then(r=>r.json())
+      .then(d=>{ if(d.ok) window.location = d.pdf_url; });
+    }
+  }
+}
+</script>
+
+<style>
+.btn-del { color:#c33; border:none; background:none; cursor:pointer; }
+.btn-del:hover { color:#f00; }
+</style>
+
+{% endblock %}
